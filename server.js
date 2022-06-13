@@ -18,11 +18,6 @@ app.use(session({ secret: 'ssshhhhh', saveUninitialized: true, resave: true }));
 var sess = {}
 console.log(sess)
 
-//http server
-const http = require("http");
-
-
-
 // add router in the Express app.
 app.post('/', (req, res) => {
     res.send('Hello World!');
@@ -47,39 +42,38 @@ app.post('/get', (req, res) => {
 
 app.use("/", router);
 
+//------webrtc
+let broadcaster;
+const port = 4000;
 
-const server = http.createServer(app)
-//----------webRTC
+const http = require("http");
+const server = http.createServer(app);
 
-// io.sockets.on("error", e => console.log(e));
-// io.sockets.on("connection", socket => {
-//     socket.on("broadcaster", () => {
-//         broadcaster = socket.id;
-//         socket.broadcast.emit("broadcaster");
-//     });
-//     socket.on("watcher", () => {
-//         socket.to(broadcaster).emit("watcher", socket.id);
-//     });
-//     socket.on("offer", (id, message) => {
-//         socket.to(id).emit("offer", socket.id, message);
-//     });
-//     socket.on("answer", (id, message) => {
-//         socket.to(id).emit("answer", socket.id, message);
-//     });
-//     socket.on("candidate", (id, message) => {
-//         socket.to(id).emit("candidate", socket.id, message);
-//     });
-//     socket.on("disconnect", () => {
-//         socket.to(broadcaster).emit("disconnectPeer", socket.id);
-//     });
-// });
+const io = require("socket.io")(server);
+app.use(express.static(__dirname + "/public"));
 
-const getApiAndEmit = socket => {
-    const response = new Date();
-    // Emitting a new message. Will be consumed by the client
-    socket.emit("FromAPI", response);
-};
-
+io.sockets.on("error", e => console.log(e));
+io.sockets.on("connection", socket => {
+    socket.on("broadcaster", () => {
+        broadcaster = socket.id;
+        socket.broadcast.emit("broadcaster");
+    });
+    socket.on("watcher", () => {
+        socket.to(broadcaster).emit("watcher", socket.id);
+    });
+    socket.on("offer", (id, message) => {
+        socket.to(id).emit("offer", socket.id, message);
+    });
+    socket.on("answer", (id, message) => {
+        socket.to(id).emit("answer", socket.id, message);
+    });
+    socket.on("candidate", (id, message) => {
+        socket.to(id).emit("candidate", socket.id, message);
+    });
+    socket.on("disconnect", () => {
+        socket.to(broadcaster).emit("disconnectPeer", socket.id);
+    });
+});
 
 server.listen(PORT, (err) => {
     if (!err)
